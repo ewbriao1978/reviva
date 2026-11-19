@@ -434,6 +434,20 @@ Os testes 12 e 13 são os mais importantes da defesa: mostram que decisões dife
 
 ---
 
+## Documentação para a defesa
+
+A pasta `docs/` traz o material de apoio, nos três formatos:
+
+| Arquivo | O que é |
+|---|---|
+| `DOCUMENTACAO.md` / `.pdf` | os 15 conceitos técnicos explicados com exemplos do próprio código: frontend, backend, API REST, Axios, rotas, controllers, middlewares, Prisma, PostgreSQL, migrations, relacionamentos, JWT, progresso e o mecanismo de simulação |
+| `ROTEIRO-DEFESA.md` / `.pdf` | roteiro cronometrado de 9 minutos, checklist de preparação e 20 perguntas prováveis da banca com respostas |
+| `APRESENTACAO-DEFESA.pptx` / `.pdf` | 21 slides prontos, com anotações do apresentador em cada um |
+
+O `.pptx` abre no LibreOffice Impress, no PowerPoint e no Google Apresentações. As anotações aparecem no modo apresentador.
+
+---
+
 ## Licença e uso
 
 Projeto acadêmico, desenvolvido como Trabalho de Conclusão de Curso. O conteúdo educativo de primeiros socorros depende de validação da área de Enfermagem antes de qualquer uso público.
