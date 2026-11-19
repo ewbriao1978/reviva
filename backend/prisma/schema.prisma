@@ -1,0 +1,225 @@
+// =============================================================================
+// schema.prisma - Definicao das tabelas do banco de dados da REVIVA
+// =============================================================================
+// Este arquivo descreve, em uma linguagem propria do Prisma, as tabelas do
+// PostgreSQL e como elas se relacionam. A partir daqui o Prisma faz duas
+// coisas:
+//   1. "prisma migrate dev" -> cria/altera as tabelas no banco de verdade.
+//   2. "prisma generate"    -> gera o Prisma Client, usado em src/config/db.js.
+//
+// A estrutura segue o Diagrama Entidade-Relacionamento do TCC (Figura 6),
+// com oito tabelas: usuarios, modulos, conteudos, progresso_conteudo,
+// simulacoes, etapa_simulacao, alternativas e progresso_simulacao.
+//
+// Convencao usada aqui:
+//   - O NOME DO MODEL fica em PascalCase (Usuario), porque e assim que vamos
+//     escrever no JavaScript: prisma.usuario.findMany()
+//   - O @@map define o NOME REAL DA TABELA no PostgreSQL (usuarios), para
+//     bater com o DER do TCC.
+//   - O @map faz o mesmo para as colunas (senhaHash -> senha_hash).
+// =============================================================================
+
+generator client {
+  // Gera o Prisma Client em JavaScript puro, importado como "@prisma/client".
+  // O generator novo do Prisma 7 ("prisma-client") so produz TypeScript, que
+  // nao e usado neste projeto.
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Repare que a URL NAO aparece aqui: no Prisma 7 ela fica no
+  // prisma7.config.ts, lendo a variavel DATABASE_URL do arquivo .env.
+}
+
+// -----------------------------------------------------------------------------
+// ENUM - lista fechada de valores aceitos
+// -----------------------------------------------------------------------------
+// AJUSTE EM RELACAO AO DER: o diagrama do TCC nao possui um campo para
+// diferenciar o administrador do usuario comum, mas os requisitos RF14 a RF17
+// preveem o ator "Administrador". Sem este campo esses requisitos nao teriam
+// como ser implementados. Usar um enum (em vez de texto livre) faz o proprio
+// PostgreSQL recusar qualquer valor diferente de USUARIO ou ADMIN.
+enum TipoUsuario {
+  USUARIO
+  ADMIN
+}
+
+// -----------------------------------------------------------------------------
+// USUARIOS - quem acessa a plataforma (RF01, RF02, RF03)
+// -----------------------------------------------------------------------------
+model Usuario {
+  id             Int         @id @default(autoincrement()) @map("id_usuario")
+  nome           String      @db.VarChar(100)
+  email          String      @unique @db.VarChar(150) // @unique impede dois cadastros com o mesmo email
+  senhaHash      String      @map("senha_hash") // guarda o HASH do bcrypt, nunca a senha digitada (RNF03)
+  dataNascimento DateTime?   @map("data_nascimento") @db.Date // opcional (o "?" permite ficar vazio)
+  tipo           TipoUsuario @default(USUARIO)
+  dataCadastro   DateTime    @default(now()) @map("data_cadastro") // preenchido sozinho na insercao
+
+  // Lados "muitos" dos relacionamentos. Nao viram coluna no banco: servem para
+  // o JavaScript poder fazer usuario.progressoConteudos.
+  progressoConteudos  ProgressoConteudo[]
+  progressoSimulacoes ProgressoSimulacao[]
+
+  @@map("usuarios")
+}
+
+// -----------------------------------------------------------------------------
+// MODULOS - os cinco temas da plataforma (RF04)
+// -----------------------------------------------------------------------------
+model Modulo {
+  id        Int     @id @default(autoincrement()) @map("id_modulo")
+  titulo    String  @db.VarChar(150)
+  descricao String
+  imagem    String? @db.VarChar(255)
+  ordem     Int // define a sequencia em que os modulos aparecem na tela
+  ativo     Boolean @default(true) // AJUSTE: permite ao admin ocultar um modulo sem apagar o progresso dos usuarios
+
+  conteudos  Conteudo[]
+  simulacoes Simulacao[]
+
+  @@map("modulos")
+}
+
+// -----------------------------------------------------------------------------
+// CONTEUDOS - o material de leitura de cada modulo (RF05)
+// -----------------------------------------------------------------------------
+model Conteudo {
+  id       Int     @id @default(autoincrement()) @map("id_conteudo")
+  moduloId Int     @map("id_modulo") // CHAVE ESTRANGEIRA: liga o conteudo ao seu modulo
+  titulo   String  @db.VarChar(150)
+  texto    String
+  imagem   String? @db.VarChar(255)
+  ordem    Int
+
+  // Relacionamento 1:N -> um modulo tem varios conteudos.
+  // onDelete: Cascade -> se o modulo for excluido, seus conteudos somem junto.
+  // E isso que permite ao admin excluir um modulo sem erro de chave estrangeira.
+  modulo    Modulo              @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+  progresso ProgressoConteudo[]
+
+  @@map("conteudos")
+}
+
+// -----------------------------------------------------------------------------
+// PROGRESSO_CONTEUDO - quais conteudos cada usuario ja concluiu (RF06, RF08)
+// -----------------------------------------------------------------------------
+// Esta tabela resolve um relacionamento N:N: um usuario le varios conteudos e
+// um conteudo e lido por varios usuarios. Alem das duas chaves estrangeiras,
+// ela guarda dados proprios da relacao (se concluiu e quando).
+model ProgressoConteudo {
+  id            Int       @id @default(autoincrement()) @map("id_progresso_conteudo")
+  usuarioId     Int       @map("id_usuario")
+  conteudoId    Int       @map("id_conteudo")
+  concluido     Boolean   @default(false)
+  ultimoAcesso  DateTime? @map("ultimo_acesso") // alimenta o card "Continue de onde parou" (RF08)
+  dataConclusao DateTime? @map("data_conclusao")
+
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  conteudo Conteudo @relation(fields: [conteudoId], references: [id], onDelete: Cascade)
+
+  // Garante no banco que existe no maximo UMA linha por usuario/conteudo.
+  // Sem isso, marcar o mesmo conteudo duas vezes criaria registros duplicados
+  // e o percentual de progresso passaria de 100%.
+  @@unique([usuarioId, conteudoId])
+  @@map("progresso_conteudo")
+}
+
+// -----------------------------------------------------------------------------
+// SIMULACOES - a atividade de tomada de decisao de cada modulo (RF09)
+// -----------------------------------------------------------------------------
+model Simulacao {
+  id        Int     @id @default(autoincrement()) @map("id_simulacao")
+  moduloId  Int     @map("id_modulo")
+  titulo    String  @db.VarChar(150)
+  descricao String
+  imagem    String? @db.VarChar(255)
+  ativa     Boolean @default(true) // AJUSTE: mesmo motivo do campo "ativo" em Modulo
+
+  modulo    Modulo               @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+  etapas    EtapaSimulacao[]
+  progresso ProgressoSimulacao[]
+
+  @@map("simulacoes")
+}
+
+// -----------------------------------------------------------------------------
+// ETAPA_SIMULACAO - cada "cena" apresentada dentro de uma simulacao
+// -----------------------------------------------------------------------------
+// Uma simulacao nao e uma lista linear: dependendo da escolha, o usuario pode
+// ir para etapas diferentes. Por isso o DER do TCC usa as marcacoes eh_inicial
+// e eh_final em vez de um simples numero de ordem - e elas que dizem ao sistema
+// por onde comecar e onde a simulacao termina.
+model EtapaSimulacao {
+  id          Int     @id @default(autoincrement()) @map("id_etapa")
+  simulacaoId Int     @map("id_simulacao")
+  titulo      String? @db.VarChar(150) // AJUSTE: o prototipo da Figura 5 mostra um titulo acima da situacao
+  texto       String // a situacao hipotetica descrita ao usuario
+  imagem      String? @db.VarChar(255)
+  ehInicial   Boolean @default(false) @map("eh_inicial") // por onde a simulacao comeca
+  ehFinal     Boolean @default(false) @map("eh_final") // chegando aqui, a simulacao acaba
+
+  simulacao    Simulacao     @relation(fields: [simulacaoId], references: [id], onDelete: Cascade)
+  alternativas Alternativa[] @relation("AlternativasDaEtapa")
+
+  // Alternativas de OUTRAS etapas que levam ate esta etapa.
+  alternativasQueApontamAqui Alternativa[]        @relation("ProximaEtapa")
+  // Usuarios que estao parados nesta etapa no momento.
+  progressoAqui              ProgressoSimulacao[] @relation("EtapaAtual")
+
+  @@map("etapa_simulacao")
+}
+
+// -----------------------------------------------------------------------------
+// ALTERNATIVAS - as opcoes de escolha de cada etapa (RF10, RF11)
+// -----------------------------------------------------------------------------
+model Alternativa {
+  id             Int     @id @default(autoincrement()) @map("id_alternativa")
+  etapaId        Int     @map("id_etapa")
+  texto          String // o que o usuario le e escolhe
+  feedback       String // a explicacao mostrada DEPOIS da escolha (RF11)
+  correta        Boolean @default(false)
+  proximaEtapaId Int?    @map("id_proxima_etapa") // se ficar vazio, a simulacao termina aqui
+  ordem          Int // posicao da alternativa na tela (A, B, C, D)
+
+  // ATENCAO: esta tabela tem DUAS ligacoes para EtapaSimulacao.
+  // Quando ha mais de uma ligacao entre as mesmas tabelas, o Prisma exige que
+  // cada uma receba um nome ("AlternativasDaEtapa" e "ProximaEtapa") para saber
+  // qual e qual.
+
+  // 1) A etapa onde esta alternativa aparece.
+  etapa EtapaSimulacao @relation("AlternativasDaEtapa", fields: [etapaId], references: [id], onDelete: Cascade)
+
+  // 2) A etapa para onde esta escolha leva. E este campo que encadeia a
+  //    simulacao e permite que decisoes diferentes tenham consequencias
+  //    diferentes. onDelete: SetNull -> se a etapa de destino for excluida,
+  //    este campo fica vazio em vez de quebrar o banco.
+  proximaEtapa EtapaSimulacao? @relation("ProximaEtapa", fields: [proximaEtapaId], references: [id], onDelete: SetNull)
+
+  @@map("alternativas")
+}
+
+// -----------------------------------------------------------------------------
+// PROGRESSO_SIMULACAO - o andamento de cada usuario em cada simulacao (RF12)
+// -----------------------------------------------------------------------------
+model ProgressoSimulacao {
+  id            Int       @id @default(autoincrement()) @map("id_progresso_simulacao")
+  usuarioId     Int       @map("id_usuario")
+  simulacaoId   Int       @map("id_simulacao")
+  etapaAtualId  Int?      @map("id_etapa_atual") // em qual etapa o usuario parou
+  concluido     Boolean   @default(false)
+  dataInicio    DateTime? @map("data_inicio")
+  ultimoAcesso  DateTime? @map("ultimo_acesso")
+  dataConclusao DateTime? @map("data_conclusao")
+
+  usuario    Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  simulacao  Simulacao       @relation(fields: [simulacaoId], references: [id], onDelete: Cascade)
+  etapaAtual EtapaSimulacao? @relation("EtapaAtual", fields: [etapaAtualId], references: [id], onDelete: SetNull)
+
+  // AJUSTE: o DER nao previa esta restricao. Sem ela, refazer uma simulacao
+  // (caso de uso "Repetir simulacao") criaria uma segunda linha e o progresso
+  // ficaria errado. Com ela, repetir apenas reinicia a linha existente.
+  @@unique([usuarioId, simulacaoId])
+  @@map("progresso_simulacao")
+}

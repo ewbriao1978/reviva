@@ -1,0 +1,594 @@
+/* ==========================================================================
+   index.css - Estilos da plataforma REVIVA
+   ==========================================================================
+   CSS tradicional, sem frameworks. A organizacao segue a ordem:
+     1. Variaveis de cor
+     2. Reset e base
+     3. Layout (menu lateral + conteudo)
+     4. Componentes reutilizaveis (botoes, cards, barra de progresso)
+     5. Paginas especificas
+     6. Responsividade (celular)
+
+   As cores seguem a identidade dos prototipos do TCC: vermelho e branco.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. VARIAVEIS DE COR
+   --------------------------------------------------------------------------
+   Definir as cores uma unica vez em :root permite reusa-las com var(--nome).
+   Para mudar o tema inteiro do site, basta alterar aqui.
+   -------------------------------------------------------------------------- */
+:root {
+  --vermelho: #e63946;
+  --vermelho-escuro: #c1121f;
+  --vermelho-claro: #fde8ea;
+
+  --verde: #2a9d5c;
+  --verde-claro: #e6f4ec;
+
+  --texto: #1d2733;
+  --texto-suave: #6b7785;
+
+  --fundo: #f5f6f8;
+  --branco: #ffffff;
+  --borda: #e2e5ea;
+
+  --sombra: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --raio: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   2. RESET E BASE
+   -------------------------------------------------------------------------- */
+
+/* O seletor * atinge todos os elementos. border-box faz o padding ser contado
+   DENTRO da largura, o que evita surpresas no tamanho das caixas. */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background-color: var(--fundo);
+  color: var(--texto);
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.3rem;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin-bottom: 0.8rem;
+}
+
+/* --------------------------------------------------------------------------
+   3. LAYOUT - menu lateral fixo + area de conteudo
+   --------------------------------------------------------------------------
+   Usamos FLEXBOX: o container vira uma linha com dois filhos lado a lado.
+   -------------------------------------------------------------------------- */
+.layout {
+  display: flex;
+  min-height: 100vh; /* 100% da altura da tela */
+}
+
+.menu-lateral {
+  width: 230px;
+  flex-shrink: 0; /* impede o menu de encolher quando falta espaco */
+  background-color: var(--branco);
+  border-right: 1px solid var(--borda);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-logo {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: var(--vermelho);
+  margin-bottom: 2rem;
+  padding-left: 0.5rem;
+}
+
+.menu-item {
+  display: block;
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--raio);
+  color: var(--texto-suave);
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.menu-item:hover {
+  background-color: var(--fundo);
+  color: var(--texto);
+}
+
+/* Classe aplicada ao item da pagina em que o usuario esta. */
+.menu-item.ativo {
+  background-color: var(--vermelho-claro);
+  color: var(--vermelho-escuro);
+}
+
+/* Caixa de emergencia no rodape do menu (presente nos prototipos do TCC). */
+.menu-emergencia {
+  margin-top: auto; /* empurra para o final da coluna */
+  background-color: var(--vermelho-claro);
+  border-radius: var(--raio);
+  padding: 0.8rem;
+  font-size: 0.85rem;
+  color: var(--vermelho-escuro);
+}
+
+.menu-emergencia strong {
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.conteudo-principal {
+  flex: 1; /* ocupa todo o espaco restante */
+  padding: 2rem;
+  overflow-x: auto;
+}
+
+/* --------------------------------------------------------------------------
+   4. COMPONENTES REUTILIZAVEIS
+   -------------------------------------------------------------------------- */
+
+/* --- Cards --- */
+.card {
+  background-color: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 1.2rem;
+  box-shadow: var(--sombra);
+}
+
+/* Grade que se ajusta sozinha ao espaco disponivel.
+   auto-fill + minmax = quantas colunas couberem, com no minimo 220px cada. */
+.grade-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.card-modulo {
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.card-modulo:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-modulo h3 {
+  font-size: 1rem;
+  margin-bottom: 0.3rem;
+}
+
+.card-modulo p {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  margin-bottom: 0.8rem;
+}
+
+/* --- Botoes --- */
+.botao {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: var(--raio);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.botao-primario {
+  background-color: var(--vermelho);
+  color: var(--branco);
+}
+
+.botao-primario:hover {
+  background-color: var(--vermelho-escuro);
+}
+
+.botao-secundario {
+  background-color: var(--branco);
+  color: var(--vermelho);
+  border: 1px solid var(--vermelho);
+}
+
+.botao-secundario:hover {
+  background-color: var(--vermelho-claro);
+}
+
+/* :disabled estiliza o botao quando ele esta bloqueado. */
+.botao:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Barra de progresso --- */
+.barra-progresso {
+  background-color: var(--borda);
+  border-radius: 20px;
+  height: 8px;
+  overflow: hidden; /* faz o preenchimento respeitar as bordas arredondadas */
+}
+
+.barra-progresso-preenchimento {
+  background-color: var(--vermelho);
+  height: 100%;
+  border-radius: 20px;
+  transition: width 0.3s; /* anima quando o percentual muda */
+}
+
+/* Quando o item esta 100% concluido, a barra fica verde. */
+.barra-progresso-preenchimento.completo {
+  background-color: var(--verde);
+}
+
+.texto-progresso {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  margin-top: 0.3rem;
+}
+
+/* --- Etiquetas de situacao --- */
+.etiqueta {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: 20px;
+}
+
+.etiqueta-concluido {
+  background-color: var(--verde-claro);
+  color: var(--verde);
+}
+
+.etiqueta-pendente {
+  background-color: var(--fundo);
+  color: var(--texto-suave);
+}
+
+/* --- Formularios --- */
+.campo {
+  margin-bottom: 1rem;
+}
+
+.campo label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.campo input,
+.campo textarea,
+.campo select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.campo input:focus,
+.campo textarea:focus {
+  outline: 2px solid var(--vermelho);
+  border-color: transparent;
+}
+
+/* --- Mensagens --- */
+.mensagem-erro {
+  background-color: var(--vermelho-claro);
+  color: var(--vermelho-escuro);
+  padding: 0.7rem;
+  border-radius: var(--raio);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.mensagem-sucesso {
+  background-color: var(--verde-claro);
+  color: var(--verde);
+  padding: 0.7rem;
+  border-radius: var(--raio);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+/* Aviso educativo exibido nos conteudos e simulacoes. */
+.aviso-educativo {
+  background-color: var(--vermelho-claro);
+  border-left: 4px solid var(--vermelho);
+  padding: 0.8rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--vermelho-escuro);
+  margin-top: 1.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   5. PAGINAS ESPECIFICAS
+   -------------------------------------------------------------------------- */
+
+/* --- Login e Cadastro (telas sem menu lateral) --- */
+.pagina-acesso {
+  min-height: 100vh;
+  display: flex;
+  align-items: center; /* centraliza na vertical */
+  justify-content: center; /* centraliza na horizontal */
+  padding: 1rem;
+}
+
+.caixa-acesso {
+  background-color: var(--branco);
+  padding: 2rem;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  width: 100%;
+  max-width: 380px;
+}
+
+.caixa-acesso h1 {
+  color: var(--vermelho);
+  text-align: center;
+}
+
+.caixa-acesso .subtitulo {
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Dashboard --- */
+.linha-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.destaque-percentual {
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: var(--vermelho);
+  line-height: 1.1;
+}
+
+.rotulo-card {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+/* --- Pagina de conteudo (duas colunas: sumario + texto) --- */
+.layout-conteudo {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.sumario-item {
+  display: block;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+  margin-bottom: 0.2rem;
+  cursor: pointer;
+}
+
+.sumario-item:hover {
+  background-color: var(--fundo);
+}
+
+.sumario-item.atual {
+  background-color: var(--vermelho-claro);
+  color: var(--vermelho-escuro);
+  font-weight: 600;
+}
+
+/* white-space: pre-line faz as quebras de linha do banco aparecerem na tela. */
+.texto-conteudo {
+  white-space: pre-line;
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+/* --- Simulacao --- */
+.situacao {
+  background-color: var(--vermelho-claro);
+  border-radius: var(--raio);
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.situacao .rotulo-card {
+  color: var(--vermelho);
+}
+
+.situacao p {
+  white-space: pre-line;
+}
+
+/* Cada alternativa e um botao que ocupa a largura toda. */
+.alternativa {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background-color: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.6rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--texto);
+}
+
+.alternativa:hover:not(:disabled) {
+  border-color: var(--vermelho);
+  background-color: var(--vermelho-claro);
+}
+
+/* Alternativa marcada pelo usuario antes de confirmar. */
+.alternativa.selecionada {
+  border-color: var(--vermelho);
+  border-width: 2px;
+  background-color: var(--vermelho-claro);
+}
+
+.alternativa-letra {
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+/* Caixa de feedback mostrada depois da escolha. */
+.feedback {
+  border-radius: var(--raio);
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.feedback.correta {
+  background-color: var(--verde-claro);
+  border-left: 4px solid var(--verde);
+}
+
+.feedback.incorreta {
+  background-color: var(--vermelho-claro);
+  border-left: 4px solid var(--vermelho);
+}
+
+.feedback h3 {
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+/* --- Area administrativa --- */
+.abas {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--borda);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.aba {
+  padding: 0.6rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  font-family: inherit;
+  border-bottom: 3px solid transparent;
+}
+
+.aba.ativa {
+  color: var(--vermelho);
+  border-bottom-color: var(--vermelho);
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse; /* junta as bordas das celulas */
+  font-size: 0.9rem;
+}
+
+.tabela th,
+.tabela td {
+  text-align: left;
+  padding: 0.7rem;
+  border-bottom: 1px solid var(--borda);
+}
+
+.tabela th {
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+/* Permite rolar a tabela na horizontal em telas pequenas. */
+.tabela-rolavel {
+  overflow-x: auto;
+}
+
+.carregando {
+  color: var(--texto-suave);
+  padding: 2rem;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   6. RESPONSIVIDADE (RNF02)
+   --------------------------------------------------------------------------
+   A media query aplica estas regras SOMENTE quando a tela tem ate 768px de
+   largura - ou seja, em celulares e tablets.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  /* O layout deixa de ser lado a lado e passa a ser um embaixo do outro. */
+  .layout {
+    flex-direction: column;
+  }
+
+  .menu-lateral {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.8rem;
+    border-right: none;
+    border-bottom: 1px solid var(--borda);
+  }
+
+  .menu-logo {
+    margin-bottom: 0;
+    width: 100%;
+    font-size: 1.3rem;
+  }
+
+  .menu-item {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0;
+  }
+
+  /* A caixa de emergencia ocuparia muito espaco no celular. */
+  .menu-emergencia {
+    display: none;
+  }
+
+  .conteudo-principal {
+    padding: 1rem;
+  }
+
+  /* Cards e colunas passam a ocupar a largura inteira. */
+  .linha-cards,
+  .layout-conteudo {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,26 @@
+# =============================================================================
+# .gitignore - arquivos que NAO devem ir para o GitHub
+# =============================================================================
+
+# Dependencias instaladas pelo npm (sao reinstaladas com "npm install")
+node_modules/
+
+# Variaveis de ambiente com senhas.
+# O .env.example, esse sim, vai para o repositorio.
+.env
+.env.local
+
+# Pastas geradas automaticamente
+dist/
+build/
+backend/generated/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Arquivos de editores e do sistema
+.vscode/
+.idea/
+.DS_Store
+*.swp

@@ -1,0 +1,8 @@
+# Dependencias instaladas pelo npm
+node_modules
+
+# Variaveis de ambiente com senhas - nunca versionar
+.env
+
+# Logs
+*.log
