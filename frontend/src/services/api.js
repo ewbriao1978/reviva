@@ -14,7 +14,11 @@ import axios from "axios";
 
 const api = axios.create({
   // Endereco base do backend. Tudo que pedirmos sera somado a este inicio.
-  baseURL: "http://localhost:3000/api",
+  //
+  // O Vite permite configurar valores por variavel de ambiente: basta que o
+  // nome comece com VITE_. Quando o projeto roda no Docker, o endereco vem do
+  // docker-compose.yml; fora dele, usamos o padrao de desenvolvimento.
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
 });
 
 // -----------------------------------------------------------------------------

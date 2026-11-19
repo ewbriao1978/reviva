@@ -1,0 +1,11 @@
+# Arquivos que NAO devem ser copiados para dentro da imagem Docker.
+# Deixa a construcao mais rapida e a imagem menor.
+
+# As dependencias sao reinstaladas dentro do container, para o sistema dele.
+node_modules
+
+# O container recebe as variaveis pelo docker-compose.yml.
+.env
+
+*.log
+.git

@@ -1,0 +1,125 @@
+# =============================================================================
+# docker-compose.yml - Sobe a plataforma REVIVA inteira com um unico comando
+# =============================================================================
+# O Docker resolve o problema do "na minha maquina funciona": em vez de cada
+# pessoa instalar Node e PostgreSQL por conta propria (em versoes diferentes),
+# todos rodam exatamente as mesmas versoes, dentro de containers.
+#
+# COMO USAR
+#   docker compose up          -> sobe tudo (a primeira vez demora alguns minutos)
+#   docker compose up -d       -> sobe em segundo plano
+#   docker compose down        -> para tudo
+#   docker compose down -v     -> para tudo E APAGA o banco de dados
+#
+# Depois de subir:
+#   Frontend -> http://localhost:5173
+#   Backend  -> http://localhost:3000
+#
+# Um "service" aqui e um container. Temos tres: o banco, a API e a interface.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # BANCO DE DADOS
+  # ---------------------------------------------------------------------------
+  db:
+    # Imagem oficial do PostgreSQL 16, baixada automaticamente do Docker Hub.
+    # A versao fica fixa de proposito: assim todo mundo usa a mesma.
+    image: postgres:16
+    container_name: reviva-db
+    restart: unless-stopped
+
+    # O proprio PostgreSQL cria o usuario e o banco na primeira execucao,
+    # usando estas variaveis. Nao precisamos rodar nenhum comando SQL a mao.
+    environment:
+      POSTGRES_USER: reviva
+      POSTGRES_PASSWORD: reviva123
+      POSTGRES_DB: reviva_db
+
+    ports:
+      # "5435:5432" significa: a porta 5432 DE DENTRO do container aparece como
+      # 5435 no seu computador. Usamos 5435 para nao conflitar com um
+      # PostgreSQL que ja esteja instalado na maquina.
+      # Serve para inspecionar o banco com o pgAdmin, DBeaver ou psql.
+      - "5435:5432"
+
+    volumes:
+      # Um "volume" guarda os dados fora do container. Sem ele, todo
+      # "docker compose down" apagaria o banco inteiro.
+      - dados-postgres:/var/lib/postgresql/data
+
+    # O healthcheck avisa ao Docker quando o banco esta REALMENTE pronto para
+    # aceitar conexoes. Sem isso, a API tentaria conectar cedo demais e falharia.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reviva -d reviva_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # BACKEND (API em Node.js + Express)
+  # ---------------------------------------------------------------------------
+  backend:
+    # Em vez de baixar uma imagem pronta, esta e CONSTRUIDA a partir do
+    # Dockerfile que esta na pasta backend/.
+    build: ./backend
+    container_name: reviva-backend
+    restart: unless-stopped
+
+    environment:
+      # Repare no endereco: "db", e nao "localhost".
+      # Dentro da rede do Docker, cada container e alcancado pelo nome do seu
+      # service. Para a API, o banco se chama "db" e esta na porta 5432
+      # (a porta interna, nao a 5435 que exportamos para fora).
+      DATABASE_URL: "postgresql://reviva:reviva123@db:5432/reviva_db?schema=public"
+      JWT_SECRET: "reviva-chave-secreta-de-desenvolvimento-local"
+      JWT_EXPIRES_IN: "7d"
+      PORT: 3000
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      db:
+        # Só inicia depois que o healthcheck do banco passar.
+        condition: service_healthy
+
+    volumes:
+      # Liga a pasta backend/ do seu computador a pasta /app do container.
+      # Assim, ao editar um arquivo no editor, a mudanca vale na hora dentro
+      # do container (o servidor reinicia sozinho com o "node --watch").
+      - ./backend:/app
+      # Esta linha protege a pasta node_modules do container, impedindo que a
+      # do seu computador (instalada para outro sistema) sobrescreva a de la.
+      - /app/node_modules
+
+  # ---------------------------------------------------------------------------
+  # FRONTEND (React + Vite)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build: ./frontend
+    container_name: reviva-frontend
+    restart: unless-stopped
+
+    environment:
+      # Endereco que o NAVEGADOR usa para chamar a API.
+      # Aqui e "localhost" mesmo: quem faz a requisicao e o navegador, que
+      # roda no seu computador - nao dentro da rede do Docker.
+      VITE_API_URL: "http://localhost:3000/api"
+
+    ports:
+      - "5173:5173"
+
+    depends_on:
+      - backend
+
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+# -----------------------------------------------------------------------------
+# VOLUMES
+# -----------------------------------------------------------------------------
+# Declaracao do volume usado pelo banco. O Docker o cria na primeira execucao.
+volumes:
+  dados-postgres:

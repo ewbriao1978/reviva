@@ -86,7 +86,93 @@ projeto/
 
 ---
 
-## Instalação (Ubuntu / Linux)
+## Como executar — duas opções
+
+Existem dois caminhos. Escolha **um**:
+
+| | Com Docker | Instalação manual |
+|---|---|---|
+| Esforço | um comando | ~15 minutos |
+| Precisa instalar | só o Docker | Node.js + PostgreSQL |
+| Versões | idênticas em qualquer máquina | dependem do que já está instalado |
+| Indicado para | laboratório do IFRS, apresentação, outro computador | quem já tem o ambiente montado |
+
+A opção com Docker é a recomendada quando o projeto vai rodar em outra máquina — é o que elimina o clássico "na minha casa funciona e aqui não".
+
+---
+
+## Opção A — Com Docker (recomendada)
+
+### 1. Instalar o Docker
+
+```bash
+sudo apt update
+sudo apt install docker.io docker-compose-v2
+
+# Permite usar o docker sem digitar "sudo" toda vez
+sudo usermod -aG docker $USER
+```
+
+Depois do `usermod`, **saia da sessão e entre de novo** (ou reinicie o computador) para a permissão valer.
+
+Conferir:
+
+```bash
+docker --version
+docker compose version
+docker ps            # deve listar uma tabela vazia, sem erro de permissão
+```
+
+### 2. Subir a plataforma
+
+```bash
+git clone https://github.com/ewbriao1978/reviva.git
+cd reviva
+docker compose up
+```
+
+Só isso. Na primeira vez demora alguns minutos, porque o Docker baixa as imagens e instala as dependências. Nas próximas, sobe em segundos.
+
+Quando aparecer `Rodando em: http://localhost:3000`, abra **http://localhost:5173**.
+
+### 3. Comandos do dia a dia
+
+```bash
+docker compose up          # sobe tudo
+docker compose up -d       # sobe em segundo plano
+docker compose logs -f     # acompanha os logs
+docker compose down        # para tudo (o banco é preservado)
+docker compose down -v     # para tudo e APAGA o banco
+docker compose up --build  # reconstrói após mudar o package.json
+```
+
+Para rodar um comando dentro do container do backend:
+
+```bash
+docker compose exec backend npm run seed       # recria os dados
+docker compose exec backend npx prisma studio  # abre o Prisma Studio
+docker compose exec db psql -U reviva reviva_db  # abre o terminal do banco
+```
+
+### O que o Docker sobe
+
+| Container | O que é | Porta no seu computador |
+|---|---|---|
+| `reviva-db` | PostgreSQL 16 | 5435 |
+| `reviva-backend` | API Node.js + Express | 3000 |
+| `reviva-frontend` | React + Vite | 5173 |
+
+A porta do banco é a **5435**, e não a 5432, de propósito: assim não conflita com um PostgreSQL que já esteja instalado na máquina.
+
+As migrations e o seed rodam **automaticamente** quando o container do backend inicia (ver `backend/docker-entrypoint.sh`). O seed só insere dados se o banco estiver vazio, então reiniciar não apaga o progresso de ninguém.
+
+### Editar o código com o Docker rodando
+
+Os arquivos do seu computador estão ligados aos containers. Ao salvar uma alteração, ela vale na hora: o backend reinicia sozinho e o navegador recarrega. Não é preciso reconstruir nada.
+
+---
+
+## Opção B — Instalação manual (Ubuntu / Linux)
 
 ### 1. Verificar o Node.js
 
@@ -279,6 +365,8 @@ Códigos de resposta usados: `200` sucesso · `201` criado · `400` dados invál
 ---
 
 ## Problemas conhecidos
+
+> Os problemas abaixo são da **instalação manual**. Com Docker nenhum deles acontece: o container do PostgreSQL nasce limpo e as versões são sempre as mesmas.
 
 ### `template database "template1" has a collation version mismatch`
 

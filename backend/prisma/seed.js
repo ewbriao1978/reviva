@@ -48,6 +48,18 @@ const AVISO_EDUCATIVO =
   "Bombeiros (193).";
 
 async function main() {
+  // Quando executado com a flag --apenas-se-vazio (como faz o Docker ao subir
+  // o container), o seed so roda se o banco ainda nao tiver modulos. Isso
+  // evita que o progresso dos usuarios seja apagado a cada reinicio.
+  if (process.argv.includes("--apenas-se-vazio")) {
+    const quantosModulos = await prisma.modulo.count();
+
+    if (quantosModulos > 0) {
+      console.log("Banco ja possui dados. Seed ignorado.");
+      return;
+    }
+  }
+
   console.log("Iniciando a insercao dos dados...\n");
 
   // ---------------------------------------------------------------------------
